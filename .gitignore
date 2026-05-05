@@ -1,0 +1,12 @@
+.env
+.env.local
+.next
+node_modules
+dist
+coverage
+*.log
+*.tsbuildinfo
+prisma/*.db
+
+# clerk configuration (can include secrets)
+/.clerk/
