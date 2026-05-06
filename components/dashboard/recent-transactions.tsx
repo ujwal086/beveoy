@@ -15,7 +15,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
   if (transactions.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-ink/20 bg-white p-8 text-center text-sm text-ink/55">
-        No transactions yet. Upload a statement to populate this table.
+        No transactions yet. Upload a statement to turn your latest spending into a clean activity feed.
       </div>
     );
   }

@@ -2,11 +2,23 @@ import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { BarChart3, Bot, CreditCard, ListChecks, PiggyBank, Upload } from "lucide-react";
 import { getCurrentAppUserOrNull } from "@/lib/user";
+import { DatabaseUnavailable } from "@/components/database-unavailable";
+import { isDatabaseConnectionError } from "@/lib/db-errors";
 import { isPremiumStatus } from "@/lib/plans";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentAppUserOrNull();
-  const isPremium = isPremiumStatus(user?.subscriptionStatus ?? "inactive");
+  let isPremium = false;
+
+  try {
+    const user = await getCurrentAppUserOrNull();
+    isPremium = isPremiumStatus(user?.subscriptionStatus ?? "inactive");
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      return <DatabaseUnavailable />;
+    }
+
+    throw error;
+  }
 
   return (
     <div className="min-h-screen bg-paper">

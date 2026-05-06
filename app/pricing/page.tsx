@@ -10,9 +10,11 @@ export default async function PricingPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-      <div className="mb-8">
+      <div className="mb-8 max-w-3xl">
         <h1 className="text-4xl font-semibold text-ink">Pricing</h1>
-        <p className="mt-2 text-sm text-ink/60">Choose a plan that fits how deeply you want Beveoy to analyze and coach your finances.</p>
+        <p className="mt-2 text-base leading-7 text-ink/60">
+          Start free, upload your first statements, and upgrade when you want deeper savings suggestions, subscription detection, and an AI coach that keeps up with your money habits.
+        </p>
       </div>
       {user ? (
         <div className="mb-6">

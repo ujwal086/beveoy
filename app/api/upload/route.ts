@@ -60,10 +60,22 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const extractedText = await extractTextFromPdf(buffer);
-    const aiAnalysis = isPremiumStatus(user.subscriptionStatus) ? await analyzeStatementWithAi(extractedText) : null;
+    const aiAnalysis = await analyzeStatementWithAi(extractedText);
     const parsedTransactions =
       aiAnalysis && aiAnalysis.transactions.length > 0 ? aiAnalysis.transactions : parseTransactionsFromText(extractedText);
-    const summaryText = aiAnalysis?.summaryText ?? createMockAiSummary(parsedTransactions);
+    const summaryText = isPremiumStatus(user.subscriptionStatus)
+      ? aiAnalysis?.summaryText ?? createMockAiSummary(parsedTransactions)
+      : createMockAiSummary(parsedTransactions);
+
+    if (parsedTransactions.length === 0) {
+      return NextResponse.json(
+        {
+          message:
+            "We could not detect transactions in this PDF yet. Try a clearer statement export or upgrade the statement format."
+        },
+        { status: 422, headers: rateLimitHeaders(rateLimit) }
+      );
+    }
 
     const uploadedFile = await prisma.uploadedFile.create({
       data: {
@@ -97,7 +109,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: uploadedFile.id,
       transactionCount: parsedTransactions.length,
-      message: aiAnalysis ? "PDF analyzed with AI successfully." : "PDF uploaded and summarized successfully."
+      message: aiAnalysis ? "Statement analyzed successfully." : "Statement uploaded and summarized successfully."
     }, { headers: rateLimitHeaders(rateLimit) });
   } catch (error) {
     console.error(error);

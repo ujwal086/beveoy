@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, Download, PiggyBank, Plus, ShieldCheck, Tag, Upload } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, CreditCard, Download, PiggyBank, Plus, ShieldCheck, Tag, Upload, Wallet } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAppUser } from "@/lib/user";
 import { createMockAiSummary } from "@/lib/ai-summary";
@@ -66,19 +66,29 @@ export default async function DashboardPage() {
     .filter((transaction) => transaction.type === "expense")
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
   const savings = income - expenses;
+  const savingsRate = income > 0 ? (savings / income) * 100 : 0;
   const topCategory = getTopSpendingCategory(transactions);
   const chartData = buildChartData(transactions);
   const categoryData = buildCategoryChart(transactions);
   const budgetProgress = buildBudgetProgress(transactions, budgets);
   const savingsOpportunities = findSavingsOpportunities(transactions, budgetProgress);
   const summary = latestAiSummary ?? createMockAiSummary(transactions);
+  const subscriptions = transactions
+    .filter((transaction) => transaction.type === "expense" && transaction.category === "Subscription")
+    .sort((a, b) => Number(b.amount) - Number(a.amount))
+    .slice(0, 6);
+  const topExpenses = transactions
+    .filter((transaction) => transaction.type === "expense")
+    .sort((a, b) => Number(b.amount) - Number(a.amount))
+    .slice(0, 5);
+  const recommendations = buildDashboardRecommendations(transactions, subscriptions);
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
       <div className="mb-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
           <h1 className="text-3xl font-semibold text-ink">Dashboard</h1>
-          <p className="mt-2 text-sm text-ink/60">Your uploaded PDFs become transactions, charts, and plain-English insight.</p>
+          <p className="mt-2 text-sm text-ink/60">See total income, spending trends, subscriptions, and the easiest places to save more this month.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/upload" className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90">
@@ -95,13 +105,13 @@ export default async function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total income" value={formatCurrency(income)} detail="Across uploaded documents" icon={ArrowUpCircle} />
-        <StatCard label="Total expenses" value={formatCurrency(expenses)} detail="Categorized statement activity" icon={ArrowDownCircle} />
-        <StatCard label="Savings" value={formatCurrency(savings)} detail="Income minus expenses" icon={PiggyBank} />
+        <StatCard label="Total spending" value={formatCurrency(expenses)} detail="Categorized statement activity" icon={ArrowDownCircle} />
+        <StatCard label="Savings rate" value={`${Math.max(savingsRate, 0).toFixed(0)}%`} detail={`${formatCurrency(savings)} left after spending`} icon={PiggyBank} />
         <StatCard label="Top category" value={topCategory} detail="Highest expense category" icon={Tag} />
       </div>
 
       <section className="mt-8 rounded-lg border border-mint/20 bg-white p-5 shadow-sm">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
             <div className="mb-2 flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-mint" />
@@ -111,10 +121,22 @@ export default async function DashboardPage() {
               {savingsOpportunities[0]?.detail ?? "Set budgets and add transactions to reveal money-saving recommendations."}
             </p>
           </div>
-          <Link href="/savings" className="inline-flex items-center justify-center rounded-md bg-mint px-4 py-2 text-sm font-semibold text-white hover:bg-mint/90">
-            Open coach
-          </Link>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["Subscription list", `${subscriptions.length} detected`],
+              ["Top 5 expenses", `${topExpenses.length} reviewed`],
+              ["AI suggestions", `${recommendations.length} ready`]
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-md border border-ink/8 bg-[#f8fafb] px-4 py-4">
+                <p className="text-sm text-ink/55">{label}</p>
+                <p className="mt-1 text-lg font-semibold text-ink">{value}</p>
+              </div>
+            ))}
+          </div>
         </div>
+        <Link href="/savings" className="mt-5 inline-flex items-center justify-center rounded-md bg-mint px-4 py-2 text-sm font-semibold text-white hover:bg-mint/90">
+          Open coach
+        </Link>
       </section>
 
       <div className="mt-8 grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
@@ -130,6 +152,66 @@ export default async function DashboardPage() {
         <h2 className="mb-3 text-lg font-semibold text-ink">Category breakdown</h2>
         <CategoryChart data={categoryData} />
       </section>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-mint" />
+            <h2 className="text-lg font-semibold text-ink">Subscriptions</h2>
+          </div>
+          {subscriptions.length === 0 ? (
+            <p className="text-sm leading-6 text-ink/60">Recurring services will appear here after statements are analyzed.</p>
+          ) : (
+            <div className="space-y-3">
+              {subscriptions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between rounded-md border border-ink/8 bg-[#f8fafb] px-3 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-ink">{transaction.description}</p>
+                    <p className="text-xs text-ink/50">{transaction.category}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-ink">{formatCurrency(Number(transaction.amount))}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-mint" />
+            <h2 className="text-lg font-semibold text-ink">Top 5 expenses</h2>
+          </div>
+          {topExpenses.length === 0 ? (
+            <p className="text-sm leading-6 text-ink/60">Your biggest expenses will show up here once spending is tracked.</p>
+          ) : (
+            <div className="space-y-3">
+              {topExpenses.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between rounded-md border border-ink/8 bg-[#fdf9f8] px-3 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-ink">{transaction.description}</p>
+                    <p className="text-xs text-ink/50">{transaction.category}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-coral">{formatCurrency(Number(transaction.amount))}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-mint" />
+            <h2 className="text-lg font-semibold text-ink">AI recommendations</h2>
+          </div>
+          <div className="space-y-3">
+            {recommendations.map((recommendation) => (
+              <div key={recommendation} className="rounded-md border border-ink/8 bg-[#f8fafb] px-3 py-3">
+                <p className="text-sm leading-6 text-ink/70">{recommendation}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
 
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between gap-3">
@@ -256,4 +338,33 @@ function getBucket(date: Date, range: "weekly" | "monthly" | "yearly" | "all") {
     label: date.toLocaleString("en-US", { month: "short", year: "numeric" }),
     sortValue: new Date(date.getFullYear(), date.getMonth(), 1).getTime()
   };
+}
+
+function buildDashboardRecommendations(transactions: DashboardTransaction[], subscriptions: DashboardTransaction[]) {
+  const expenses = transactions.filter((transaction) => transaction.type === "expense");
+  const dining = expenses.filter((transaction) => /restaurant|chipotle|starbucks|mcdonald|dining|tst/i.test(transaction.description));
+  const shopping = expenses.filter((transaction) => /amazon|target|walmart|shop/i.test(transaction.description));
+  const diningTotal = dining.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+  const shoppingTotal = shopping.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+  const subscriptionTotal = subscriptions.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+
+  const recommendations = [];
+
+  if (diningTotal > 0) {
+    recommendations.push(`Dining is costing about ${formatCurrency(diningTotal)}. Trimming just 15% there could free up ${formatCurrency(diningTotal * 0.15)}.`);
+  }
+
+  if (shoppingTotal > 0) {
+    recommendations.push(`Shopping came to ${formatCurrency(shoppingTotal)}. A pause on impulse buys could save around ${formatCurrency(shoppingTotal * 0.12)} next month.`);
+  }
+
+  if (subscriptionTotal > 0) {
+    recommendations.push(`Subscriptions total about ${formatCurrency(subscriptionTotal)}. Canceling unused services is the fastest low-friction saving move.`);
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push("Upload another statement or add transactions to unlock more specific savings suggestions.");
+  }
+
+  return recommendations.slice(0, 4);
 }

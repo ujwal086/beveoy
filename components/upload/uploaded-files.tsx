@@ -34,7 +34,7 @@ export function UploadedFiles({ files }: { files: UploadedFileRow[] }) {
   if (files.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-ink/20 bg-white p-8 text-center text-sm text-ink/55">
-        Uploaded PDFs will appear here. Files are stored as private extracted text, not public links.
+        Your uploaded statements will appear here. Files stay private to your account and are never shared as public links.
       </div>
     );
   }

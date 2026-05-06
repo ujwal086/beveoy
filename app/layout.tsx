@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Beveoy",
-  description: "Upload financial PDFs, extract transactions, and understand your spending."
+  description: "Upload statements, find money leaks, and turn your spending into a smarter savings plan with Beveoy."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

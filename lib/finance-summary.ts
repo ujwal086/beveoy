@@ -13,6 +13,7 @@ export type TransactionSummary = {
   topSpendingCategories: { category: string; amount: number }[];
   subscriptions: { description: string; amount: number }[];
   unusualSpending: { description: string; amount: number; date: string }[];
+  topExpenseDay: { label: string; amount: number } | null;
 };
 
 export function buildTransactionSummary(transactions: TransactionSummaryRow[]): TransactionSummary {
@@ -47,13 +48,27 @@ export function buildTransactionSummary(transactions: TransactionSummaryRow[]): 
       date: new Date(transaction.date).toISOString().slice(0, 10)
     }));
 
+  const dayTotals = new Map<string, number>();
+  for (const transaction of expenses) {
+    const date = new Date(transaction.date).toLocaleDateString("en-US", { weekday: "long" });
+    dayTotals.set(date, (dayTotals.get(date) ?? 0) + Number(transaction.amount));
+  }
+
+  const topExpenseDayEntry = Array.from(dayTotals.entries()).sort((a, b) => b[1] - a[1])[0];
+
   return {
     totalIncome,
     totalExpenses,
     savings: totalIncome - totalExpenses,
     topSpendingCategories,
     subscriptions,
-    unusualSpending
+    unusualSpending,
+    topExpenseDay: topExpenseDayEntry
+      ? {
+          label: topExpenseDayEntry[0],
+          amount: topExpenseDayEntry[1]
+        }
+      : null
   };
 }
 

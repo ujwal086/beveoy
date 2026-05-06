@@ -34,6 +34,19 @@ STRIPE_YEARLY_PRICE_ID=
 CLIENT_URL=
 ```
 
+Important for `DATABASE_URL`:
+
+- Do not use `localhost`
+- Do not use `file:./dev.db`
+- If you use Supabase with Vercel, use the **Session Pooler** connection string
+- The direct host like `db.<project-ref>.supabase.co:5432` may fail from Vercel
+
+Example Supabase pooler format:
+
+```env
+DATABASE_URL=postgresql://postgres.PROJECT_REF:YOUR_PASSWORD@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
 Use your production Vercel domain or custom domain for `CLIENT_URL`, for example:
 
 ```env

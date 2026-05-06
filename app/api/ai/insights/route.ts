@@ -77,19 +77,44 @@ async function generateInsights(summary: ReturnType<typeof buildTransactionSumma
 
 function buildFallbackInsights(summary: ReturnType<typeof buildTransactionSummary>) {
   const insights = [];
-  insights.push(`You brought in $${summary.totalIncome.toFixed(2)} and spent $${summary.totalExpenses.toFixed(2)}.`);
-  if (summary.topSpendingCategories[0]) {
+  const topCategory = summary.topSpendingCategories[0];
+  const secondCategory = summary.topSpendingCategories[1];
+  const subscriptionTotal = summary.subscriptions.reduce((sum, subscription) => sum + subscription.amount, 0);
+
+  if (topCategory) {
+    insights.push(`Your biggest category is ${topCategory.category} at $${topCategory.amount.toFixed(2)}, so that is the first place to tighten spending.`);
+  }
+
+  if (subscriptionTotal > 0) {
     insights.push(
-      `${summary.topSpendingCategories[0].category} is your biggest spending category at $${summary.topSpendingCategories[0].amount.toFixed(2)}.`
+      `You have ${summary.subscriptions.length} subscriptions totaling about $${subscriptionTotal.toFixed(2)} each cycle. Canceling unused ones could unlock fast savings.`
     );
   }
-  if (summary.subscriptions.length > 0) {
-    insights.push(`You have ${summary.subscriptions.length} subscription charges. Review any service you did not use this month.`);
+
+  if (summary.topExpenseDay) {
+    insights.push(
+      `Your highest spending day was ${summary.topExpenseDay.label}, where you spent about $${summary.topExpenseDay.amount.toFixed(2)}.`
+    );
   }
+
+  if (topCategory && secondCategory) {
+    const possibleSavings = (topCategory.amount + secondCategory.amount) * 0.15;
+    insights.push(
+      `Reducing ${topCategory.category.toLowerCase()} and ${secondCategory.category.toLowerCase()} by 15% could save about $${possibleSavings.toFixed(2)} this month.`
+    );
+  }
+
   if (summary.unusualSpending[0]) {
-    insights.push(`A larger-than-usual expense was ${summary.unusualSpending[0].description} at $${summary.unusualSpending[0].amount.toFixed(2)}.`);
+    insights.push(
+      `${summary.unusualSpending[0].description} stands out as a larger expense at $${summary.unusualSpending[0].amount.toFixed(2)}. Review whether it was one-off or repeatable.`
+    );
   }
-  insights.push(summary.savings >= 0 ? `You saved about $${summary.savings.toFixed(2)} this period.` : `You are overspending by about $${Math.abs(summary.savings).toFixed(2)} this period.`);
+
+  insights.push(
+    summary.savings >= 0
+      ? `You are currently keeping about $${summary.savings.toFixed(2)} after income and expenses.`
+      : `You are overspending by about $${Math.abs(summary.savings).toFixed(2)} right now, so trimming just one major category will help quickly.`
+  );
   return insights;
 }
 

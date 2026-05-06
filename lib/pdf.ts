@@ -21,24 +21,27 @@ export function parseTransactionsFromText(text: string): ParsedTransaction[] {
     .filter(Boolean);
 
   const transactions: ParsedTransaction[] = [];
+  const seen = new Set<string>();
 
   for (const line of lines) {
-    const match = line.match(
-      /(\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\s+(.+?)\s+(-?\$?\d{1,3}(?:,\d{3})*(?:\.\d{2})?)$/
-    );
+    const match = matchTransactionLine(line);
 
     if (!match) continue;
 
-    const parsedDate = normalizeDate(match[1]);
-    const rawAmount = match[3].replace(/[$,]/g, "");
+    const parsedDate = normalizeDate(match.date);
+    const rawAmount = normalizeAmount(match.amount);
     const amount = Number.parseFloat(rawAmount);
 
     if (!parsedDate || Number.isNaN(amount)) continue;
 
-    const description = match[2];
+    const description = cleanDescription(match.description);
     const category = categorizeTransaction(description);
     const type = inferTransactionType(description, amount);
-    const normalizedAmount = type === "expense" ? Math.abs(amount) : Math.abs(amount);
+    const normalizedAmount = Math.abs(amount);
+    const signature = `${parsedDate.toISOString()}|${description}|${normalizedAmount.toFixed(2)}`;
+
+    if (!description || seen.has(signature)) continue;
+    seen.add(signature);
 
     transactions.push({
       date: parsedDate,
@@ -52,7 +55,44 @@ export function parseTransactionsFromText(text: string): ParsedTransaction[] {
   return transactions;
 }
 
+function matchTransactionLine(line: string) {
+  const patterns = [
+    /^(?<date>\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\s+(?<description>.+?)\s+(?<amount>-?\$?\d[\d,]*(?:\.\d{2})?(?:\s?(?:cr|dr))?)$/i,
+    /^(?<date>\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\s+(?<description>.+?)\s+(?<amount>\(\$?\d[\d,]*(?:\.\d{2})?\)|\$?\d[\d,]*(?:\.\d{2})?)$/i,
+    /^(?<date>\d{4}-\d{2}-\d{2})\s+(?<description>.+?)\s+(?<amount>-?\$?\d[\d,]*(?:\.\d{2})?)$/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = line.match(pattern);
+    if (match?.groups?.date && match.groups.description && match.groups.amount) {
+      return {
+        date: match.groups.date,
+        description: match.groups.description,
+        amount: match.groups.amount
+      };
+    }
+  }
+
+  return null;
+}
+
+function normalizeAmount(value: string) {
+  const compact = value.toLowerCase().replace(/\s+/g, "");
+  const negative = compact.includes("dr") || compact.startsWith("(");
+  const stripped = compact.replace(/[,$()]/g, "").replace(/cr|dr/g, "");
+  return negative ? `-${stripped}` : stripped;
+}
+
+function cleanDescription(value: string) {
+  return value.replace(/\s{2,}/g, " ").replace(/\b(?:pos|ach|dbt|visa|mc)\b/gi, "").trim();
+}
+
 function normalizeDate(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
   const parts = value.split(/[/-]/).map(Number);
   if (parts.length < 2) return null;
 

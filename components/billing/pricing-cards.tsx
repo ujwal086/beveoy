@@ -62,20 +62,23 @@ export function PricingCards({ currentPlan, hasPremium }: PricingCardsProps) {
       {message ? <div className="rounded-lg border border-coral/20 bg-white px-4 py-3 text-sm text-coral shadow-sm">{message}</div> : null}
       <div className="grid gap-4 lg:grid-cols-3">
       <article className="rounded-lg border border-ink/10 bg-white p-6 shadow-sm">
+        <div className="inline-flex rounded-md bg-[#f1f4f4] px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-ink/55">Starter</div>
         <h2 className="text-xl font-semibold text-ink">Free</h2>
         <p className="mt-2 text-4xl font-semibold text-ink">$0</p>
         <div className="mt-4 space-y-2 text-sm text-ink/65">
           <p>Basic dashboard</p>
           <p>3 PDF uploads/month</p>
-          <p>No AI insights</p>
+          <p>Limited insights</p>
           <p>No AI coach</p>
+          <p>No subscription monitoring history</p>
         </div>
         <button disabled className="mt-6 w-full rounded-md border border-ink/10 px-4 py-2 text-sm font-semibold text-ink">
           {currentPlan === "free" ? "Current Plan" : "Free Plan"}
         </button>
       </article>
 
-      <article className="rounded-lg border border-mint/30 bg-white p-6 shadow-sm">
+      <article className="relative rounded-lg border border-mint/30 bg-white p-6 shadow-sm">
+        <div className="absolute right-6 top-6 rounded-md bg-mint px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">Popular</div>
         <h2 className="text-xl font-semibold text-ink">Pro Monthly</h2>
         <p className="mt-2 text-4xl font-semibold text-ink">$15<span className="text-base font-medium text-ink/55">/month</span></p>
         <div className="mt-4 space-y-2 text-sm text-ink/65">
@@ -83,6 +86,8 @@ export function PricingCards({ currentPlan, hasPremium }: PricingCardsProps) {
           <p>Unlimited uploads</p>
           <p>AI insights</p>
           <p>AI coach</p>
+          <p>Subscription detection</p>
+          <p>Monthly reports and export</p>
         </div>
         <button
           onClick={() => startCheckout("monthly")}
@@ -95,6 +100,7 @@ export function PricingCards({ currentPlan, hasPremium }: PricingCardsProps) {
       </article>
 
       <article className="rounded-lg border border-ink/10 bg-white p-6 shadow-sm">
+        <div className="inline-flex rounded-md bg-[#eef8ff] px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#1d6dd9]">Best value</div>
         <h2 className="text-xl font-semibold text-ink">Pro Yearly</h2>
         <p className="mt-2 text-4xl font-semibold text-ink">$90<span className="text-base font-medium text-ink/55">/year</span></p>
         <div className="mt-4 space-y-2 text-sm text-ink/65">
@@ -102,6 +108,8 @@ export function PricingCards({ currentPlan, hasPremium }: PricingCardsProps) {
           <p>Save 50% vs monthly</p>
           <p>Unlimited uploads</p>
           <p>AI insights and AI coach</p>
+          <p>Subscription detection</p>
+          <p>Monthly reports and export</p>
         </div>
         <button
           onClick={() => startCheckout("yearly")}
